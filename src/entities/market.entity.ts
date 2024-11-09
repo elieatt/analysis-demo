@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
-import { Company } from "./company.entity";
-import { MarketPrice } from "./market-price";
+import { Entity, Column, OneToMany, PrimaryColumn } from 'typeorm';
+import { Company } from './company.entity';
+import { MarketPrice } from './market-price';
 
 @Entity()
 export class Market {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   id: number;
 
   @Column()
@@ -14,7 +14,7 @@ export class Market {
   description: string;
 
   @OneToMany(() => MarketPrice, (marketPrice) => marketPrice.market, {
-    cascade: ["insert", "update"],
+    cascade: ['insert', 'update'],
   })
   prices: MarketPrice[];
 

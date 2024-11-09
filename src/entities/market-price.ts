@@ -1,12 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  PrimaryColumn,
-  JoinColumn,
-} from "typeorm";
-import { Market } from "./market.entity";
+import { Entity, Column, ManyToOne, PrimaryColumn, JoinColumn } from 'typeorm';
+import { Market } from './market.entity';
 
 @Entity()
 export class MarketPrice {
@@ -14,12 +7,12 @@ export class MarketPrice {
   market_id: number;
 
   @ManyToOne(() => Market, (market) => market.prices)
-  @JoinColumn({ name: "market_id" })
+  @JoinColumn({ name: 'market_id' })
   market: Market;
 
-  @PrimaryColumn()
+  @PrimaryColumn('date')
   date: string;
 
-  @Column("float")
+  @Column('float')
   price: number;
 }

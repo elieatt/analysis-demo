@@ -1,17 +1,17 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   OneToMany,
   Index,
-} from "typeorm";
-import { Market } from "./market.entity";
-import { CompanyPrice } from "./company-price";
+  PrimaryColumn,
+} from 'typeorm';
+import { Market } from './market.entity';
+import { CompanyPrice } from './company-price';
 
 @Entity()
 export class Company {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   id: number;
 
   @Column()
@@ -21,7 +21,7 @@ export class Company {
   description: string;
 
   @OneToMany(() => CompanyPrice, (companyPrice) => companyPrice.company, {
-    cascade: ["insert", "update"],
+    cascade: ['insert', 'update'],
   })
   prices: CompanyPrice[];
 
