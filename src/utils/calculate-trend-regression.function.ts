@@ -24,3 +24,8 @@ export function calculateTrendRegression(prices: number[]): TrendDirection {
   if (slope < -0.5) return TrendDirection.Downward;
   return TrendDirection.Stable;
 }
+export function mapTrendSlopeToDirection(slope: number): TrendDirection {
+  if (slope > 0.5) return TrendDirection.Upward; // Adjust threshold as needed
+  if (slope < -0.5) return TrendDirection.Downward;
+  return TrendDirection.Stable;
+}

@@ -4,7 +4,7 @@ import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
 import { TrendDirection } from 'src/common/enums/trend-direction.enum';
 import { CompanyFilterDto } from './dto/company-filter.dto';
-import { calculateTrendRegression } from 'src/utils/calculate-trend-regression.function';
+import { mapTrendSlopeToDirection } from 'src/utils/calculate-trend-regression.function';
 
 @Injectable()
 export class CompanyService {
@@ -231,11 +231,76 @@ export class CompanyService {
   //   });
   // }
 
+  // async getCompaniesWithStats(filter: CompanyFilterDto) {
+  //   const thirtyDaysAgo = new Date(
+  //     new Date().setDate(new Date().getDate() - 30),
+  //   );
+  //   const sevenDaysAgo = new Date(new Date().setDate(new Date().getDate() - 7));
+
+  //   const queryBuilder = this.companyRepo
+  //     .createQueryBuilder('c')
+  //     .select([
+  //       'c.id AS company_id',
+  //       'c.name AS company_name',
+  //       'm.name AS market_name',
+  //       // Latest price (using subquery for the latest price)
+  //       '(SELECT price FROM company_price p WHERE p.company_id = c.id ORDER BY p.date DESC LIMIT 1) AS company_value_now',
+  //       // Best and worst prices in the last 30 days
+  //       'MAX(CASE WHEN p.date >= :thirtyDaysAgo THEN p.price END) AS best_price_30_days',
+  //       'MIN(CASE WHEN p.date >= :thirtyDaysAgo THEN p.price END) AS worst_price_30_days',
+  //       // Last 7 days prices
+  //       'ARRAY_AGG(CASE WHEN p.date >= :sevenDaysAgo THEN p.price END) AS company_last_7_days_prices',
+  //       'ARRAY_AGG(CASE WHEN mp.date >= :sevenDaysAgo THEN mp.price END) AS market_last_7_days_prices',
+  //     ])
+  //     .leftJoin('c.market', 'm') // Joining market table
+  //     .leftJoin('company_price', 'p', 'p.company_id = c.id') // Joining company prices
+  //     .leftJoin('market_price', 'mp', 'mp.market_id = m.id'); // Joining market prices
+
+  //   if (filter.marketId !== undefined) {
+  //     queryBuilder.where('(m.id = :marketId)', {
+  //       marketId: filter.marketId,
+  //     });
+  //   }
+  //   queryBuilder.groupBy('c.id, m.id');
+
+  //   // Passing the date parameters
+  //   queryBuilder.setParameters({
+  //     thirtyDaysAgo,
+  //     sevenDaysAgo,
+  //   });
+
+  //   const result = await queryBuilder.getRawMany(); // Execute the query and return raw data
+
+  //   // Process the results (this is where trend calculation would happen in your app)
+  //   return result.map((row) => {
+  //     // Calculate trends
+  //     const companyTrend = calculateTrendRegression(
+  //       row.company_last_7_days_prices,
+  //     );
+  //     const marketTrend = calculateTrendRegression(
+  //       row.market_last_7_days_prices,
+  //     );
+
+  //     return {
+  //       companyName: row.company_name,
+  //       marketName: row.market_name,
+  //       companyValueNow: row.company_value_now,
+  //       companyTrend,
+  //       marketTrend,
+  //       bestCompanyPrice: row.best_price_30_days,
+  //       worstCompanyPrice: row.worst_price_30_days,
+  //     };
+  //   });
+  // }
+
   async getCompaniesWithStats(filter: CompanyFilterDto) {
     const thirtyDaysAgo = new Date(
       new Date().setDate(new Date().getDate() - 30),
     );
-    const sevenDaysAgo = new Date(new Date().setDate(new Date().getDate() - 7));
+    const sevenDaysAgo = new Date(new Date().setDate(new Date().getDate() - 7))
+      .toISOString()
+      .split('T')[0];
+    console.log(sevenDaysAgo);
 
     const queryBuilder = this.companyRepo
       .createQueryBuilder('c')
@@ -248,20 +313,33 @@ export class CompanyService {
         // Best and worst prices in the last 30 days
         'MAX(CASE WHEN p.date >= :thirtyDaysAgo THEN p.price END) AS best_price_30_days',
         'MIN(CASE WHEN p.date >= :thirtyDaysAgo THEN p.price END) AS worst_price_30_days',
-        // Last 7 days prices
-        'ARRAY_AGG(CASE WHEN p.date >= :sevenDaysAgo THEN p.price END) AS company_last_7_days_prices',
-        'ARRAY_AGG(CASE WHEN mp.date >= :sevenDaysAgo THEN mp.price END) AS market_last_7_days_prices',
+        // Last 7 days prices for the company and market
+        // 'ARRAY_AGG(CASE WHEN p.date >= :sevenDaysAgo THEN p.price END) AS company_last_7_days_prices',
+        // 'ARRAY_AGG(CASE WHEN mp.date >= :sevenDaysAgo THEN mp.price END) AS market_last_7_days_prices',
+        // Regression slope for company prices (trend)
+        `(SELECT REGR_SLOPE(cp.price, cp.row_number)
+          FROM (
+            SELECT price, ROW_NUMBER() OVER (ORDER BY date) AS row_number
+            FROM company_price
+            WHERE company_id = c.id AND date >= :sevenDaysAgo
+          ) AS cp) AS company_trend_slope`,
+        // Regression slope for market prices (trend)
+        `(SELECT REGR_SLOPE(mp.price, mp.row_number)
+          FROM (
+            SELECT price, ROW_NUMBER() OVER (ORDER BY date) AS row_number
+            FROM market_price
+            WHERE market_id = m.id AND date >= :sevenDaysAgo
+          ) AS mp) AS market_trend_slope`,
       ])
       .leftJoin('c.market', 'm') // Joining market table
       .leftJoin('company_price', 'p', 'p.company_id = c.id') // Joining company prices
       .leftJoin('market_price', 'mp', 'mp.market_id = m.id'); // Joining market prices
 
     if (filter.marketId !== undefined) {
-      queryBuilder.where('(m.id = :marketId)', {
-        marketId: filter.marketId,
-      });
+      queryBuilder.where('(m.id = :marketId)', { marketId: filter.marketId });
     }
-    queryBuilder.groupBy('c.id, m.id');
+
+    queryBuilder.groupBy('c.id, m.id').orderBy('c.id', 'DESC');
 
     // Passing the date parameters
     queryBuilder.setParameters({
@@ -270,19 +348,16 @@ export class CompanyService {
     });
 
     const result = await queryBuilder.getRawMany(); // Execute the query and return raw data
+    console.log(result);
 
-    // Process the results (this is where trend calculation would happen in your app)
+    // Map the trend based on the slope value
     return result.map((row) => {
-      // Calculate trends
-      const companyTrend = calculateTrendRegression(
-        row.company_last_7_days_prices,
-      );
-      const marketTrend = calculateTrendRegression(
-        row.market_last_7_days_prices,
-      );
+      const companyTrend = mapTrendSlopeToDirection(row.company_trend_slope);
+      const marketTrend = mapTrendSlopeToDirection(row.market_trend_slope);
 
       return {
         companyName: row.company_name,
+        companyId: row.company_id,
         marketName: row.market_name,
         companyValueNow: row.company_value_now,
         companyTrend,
