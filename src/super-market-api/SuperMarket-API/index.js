@@ -82,8 +82,8 @@ const priceFormatter = (date, price) => ({
 
 const generateData = () => {
   const today = moment();
-  const sequenceStart = today.clone().subtract(15, "days");
-  const sequenceEnd = today.clone().add(15, "days");
+  const sequenceStart = today.clone().subtract(30, "days"); // 30 days ago
+  const sequenceEnd = today.clone(); // today
   const datesRange = Array.from(
     momentRange.range(sequenceStart, sequenceEnd).by("day")
   );
@@ -136,5 +136,6 @@ const generateData = () => {
     marketsPrices
   };
 };
+
 
 module.exports = { generateData };
