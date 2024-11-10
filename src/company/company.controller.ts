@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { CompanyService } from './company.service';
 
 import { CompanyFilterDto } from './dto/company-filter.dto';
@@ -15,6 +15,10 @@ export class CompanyController {
   @Get()
   findAll(@Query() filterDto: CompanyFilterDto) {
     return this.companyService.getCompaniesWithStats(filterDto);
+  }
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.companyService.getCompanyById(id);
   }
 
   // @Get(':id')
