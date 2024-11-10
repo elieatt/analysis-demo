@@ -13,7 +13,14 @@ export class CompanyService {
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
   ) {}
-
+  /**
+   * Fetches all companies with the given filter options.
+   * This method retrieves companies along with their latest price,
+   * price trends over the past 30 and 7 days, and additional company information.
+   *
+   * @param filter - The filter criteria for retrieving the companies.
+   * @returns A list of companies with relevant information such as trends and price history.
+   */
   async fetchAllCompanies(filter: CompanyFilterDto) {
     const { marketId, companyTrend, marketTrend } = filter;
     const thirtyDaysAgo = getDateDaysAgo(30);
@@ -97,6 +104,13 @@ export class CompanyService {
     return result;
   }
 
+  /**
+   * Fetches a summary of companies in a given market.
+   * This method returns basic company details such as name and market information.
+   *
+   * @param marketId - The ID of the market to filter companies by.
+   * @returns A list of companies along with their respective market details.
+   */
   fetchCompaniesSummary(marketId: number) {
     return this.companyRepo.find({
       relations: { market: true },
@@ -105,6 +119,15 @@ export class CompanyService {
     });
   }
 
+  /**
+   * Fetches detailed information about a specific company by its ID.
+   * This method retrieves the company's latest price, trend, and price history
+   * over the past 30 days.
+   *
+   * @param companyId - The ID of the company to retrieve information for.
+   * @returns Detailed company information including price trends, market data, and history.
+   * @throws NotFoundException if the company with the specified ID is not found.
+   */
   async fetchCompanyById(companyId: number) {
     const thirtyDaysAgo = getDateDaysAgo(30);
     const sevenDaysAgo = getDateDaysAgo(7);

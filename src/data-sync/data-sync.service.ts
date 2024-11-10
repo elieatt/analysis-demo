@@ -23,12 +23,26 @@ export class DataSyncService implements OnModuleInit {
     @InjectRepository(MarketPrice)
     private readonly marketPriceRepo: Repository<MarketPrice>,
   ) {}
+  /**
+   * Called once the module is initialized. Starts the initial database synchronization.
+   * @async
+   * @method
+   */
   async onModuleInit() {
     await this.syncDB();
   }
 
+  /**
+   * Synchronizes data between the application and SUPER_MARKET API.
+   * Fetches markets, companies, and their prices from the API,
+   * then updates the database with this information.
+   * Runs daily at midnight as defined by the Cron expression.
+   * @async
+   * @method
+   * @returns {Promise<boolean>} - Returns true if synchronization is successful, otherwise false.
+   */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async syncDB() {
+  async syncDB(): Promise<boolean> {
     try {
       const markets = fetchMarkets();
 
@@ -60,11 +74,13 @@ export class DataSyncService implements OnModuleInit {
         await manager.save(Market, marketEntities);
         await manager.save(Company, companyEntities);
       });
+      return true;
     } catch (e) {
       console.error(
         'Error fetch super market api and updating DB , error message:',
         e?.message,
       );
+      return false;
     }
   }
 }
