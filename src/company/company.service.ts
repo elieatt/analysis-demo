@@ -53,9 +53,9 @@ export class CompanyService {
             WHERE mp.market_id = m.id AND date >= :sevenDaysAgo
           ) AS mp) AS market_trend_slope`,
       ])
-      .leftJoin('c.market', 'm') // Joining market table
-      .leftJoin('company_price', 'p', 'p.company_id = c.id') // Joining company prices
-      .leftJoin('market_price', 'mp', 'mp.market_id = m.id'); // Joining market prices
+      .leftJoin('c.market', 'm')
+      .leftJoin('company_price', 'p', 'p.company_id = c.id')
+      .leftJoin('market_price', 'mp', 'mp.market_id = m.id');
 
     if (marketId !== undefined) {
       queryBuilder.andWhere('(m.id = :marketId)', {
