@@ -1,34 +1,51 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+} from '@nestjs/swagger';
 import { MarketService } from './market.service';
-import { CreateMarketDto } from './dto/create-market.dto';
-import { UpdateMarketDto } from './dto/update-market.dto';
+import { MarketSummaryDto } from './dto/market-summary.dto';
+import { MarketDetailDto } from './dto/market-detail.dto';
 
-@Controller('market')
+@ApiTags('Markets')
+@Controller('markets')
 export class MarketController {
   constructor(private readonly marketService: MarketService) {}
 
-  @Post()
-  create(@Body() createMarketDto: CreateMarketDto) {
-    return this.marketService.create(createMarketDto);
-  }
-
+  /***********************************************************************************************************/
   @Get()
+  @ApiOperation({ summary: 'Retrieve a brief list of all markets' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of market summaries',
+    type: [MarketSummaryDto],
+  })
   findAll() {
     return this.marketService.findAll();
   }
 
+  /***********************************************************************************************************/
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.marketService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMarketDto: UpdateMarketDto) {
-    return this.marketService.update(+id, updateMarketDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.marketService.remove(+id);
+  @ApiOperation({
+    summary: 'Retrieve detailed information about a specific market by its ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The unique identifier of the market',
+    type: Number,
+  })
+  @ApiOkResponse({
+    description: 'Returns detailed information about the market',
+    type: MarketDetailDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Market not found',
+  })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.marketService.findById(id);
   }
 }

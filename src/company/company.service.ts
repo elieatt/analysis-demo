@@ -4,8 +4,8 @@ import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
 import { TrendDirection } from 'src/common/enums/trend-direction.enum';
 import { CompanyFilterDto } from './dto/company-filter.dto';
-import { mapTrendSlopeToDirection } from 'src/utils/calculate-trend-regression.function';
-import { getDateDaysAgo } from 'src/utils/get-days-ago.function';
+import { mapTrendSlopeToDirection } from 'src/utils/map-slpoe-to-direction.util';
+import { getDateDaysAgo } from 'src/utils/get-days-ago.util';
 
 @Injectable()
 export class CompanyService {
@@ -14,7 +14,7 @@ export class CompanyService {
     private readonly companyRepo: Repository<Company>,
   ) {}
 
-  async getCompaniesWithStats(filter: CompanyFilterDto) {
+  async fetchAllCompanies(filter: CompanyFilterDto) {
     const { marketId, companyTrend, marketTrend } = filter;
     const thirtyDaysAgo = getDateDaysAgo(30);
     const sevenDaysAgo = getDateDaysAgo(7);
@@ -97,7 +97,15 @@ export class CompanyService {
     return result;
   }
 
-  async getCompanyById(companyId: number) {
+  fetchCompaniesSummary(marketId: number) {
+    return this.companyRepo.find({
+      relations: { market: true },
+      select: { id: true, name: true, market: { id: true, name: true } },
+      where: !Number.isNaN(marketId) ? { market: { id: marketId } } : {},
+    });
+  }
+
+  async fetchCompanyById(companyId: number) {
     const thirtyDaysAgo = getDateDaysAgo(30);
     const sevenDaysAgo = getDateDaysAgo(7);
 

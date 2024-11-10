@@ -2,37 +2,28 @@ import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { CompanyService } from './company.service';
 
 import { CompanyFilterDto } from './dto/company-filter.dto';
+import { ApiQuery } from '@nestjs/swagger';
 
-@Controller('company')
+@Controller('companies')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
-  // @Post()
-  // create(@Body() createCompanyDto: CreateCompanyDto) {
-  //   return this.companyService.create(createCompanyDto);
-  // }
-
   @Get()
-  findAll(@Query() filterDto: CompanyFilterDto) {
-    return this.companyService.getCompaniesWithStats(filterDto);
+  getAllCompanies(@Query() filterDto: CompanyFilterDto) {
+    return this.companyService.fetchAllCompanies(filterDto);
   }
+  @Get('/summary')
+  @ApiQuery({
+    name: 'marketId',
+    required: false,
+    type: Number,
+  })
+  getCompaniesSummary(@Query('marketId') marketId: string) {
+    return this.companyService.fetchCompaniesSummary(parseInt(marketId));
+  }
+
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.companyService.getCompanyById(id);
+  async getCompanyById(@Param('id', ParseIntPipe) id: number) {
+    return this.companyService.fetchCompanyById(id);
   }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.companyService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateCompanyDto: UpdateCompanyDto) {
-  //   return this.companyService.update(+id, updateCompanyDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.companyService.remove(+id);
-  // }
 }

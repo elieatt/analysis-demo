@@ -12,9 +12,10 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.setGlobalPrefix('/api/v1');
   const swaggerConf = new DocumentBuilder()
-    .setTitle('FormAwesome')
-    .setDescription('The forms API description')
+    .setTitle('Company & Market API')
+    .setDescription('API to manage and retrieve company and market data')
     .setVersion('1.0')
     .build();
 
