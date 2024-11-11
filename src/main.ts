@@ -12,7 +12,14 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
   app.setGlobalPrefix('/api/v1');
+
+  app.enableCors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  });
+
   const swaggerConf = new DocumentBuilder()
     .setTitle('Company & Market API')
     .setDescription('API to manage and retrieve company and market data')
