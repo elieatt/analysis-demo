@@ -4,21 +4,29 @@ import { Market } from 'src/entities/market.entity';
 import { Repository } from 'typeorm';
 import { TrendDirection } from 'src/common/enums/trend-direction.enum';
 import { getDateDaysAgo } from 'src/utils/get-days-ago.util';
+import { CurrencyService } from 'src/currency/currency.service';
 
 @Injectable()
 export class MarketService {
   constructor(
     @InjectRepository(Market)
     private readonly marketRepo: Repository<Market>,
+    private readonly currencyService: CurrencyService,
   ) {}
 
   /**
    * Finds a market by its ID and retrieves detailed information, including the current price, trend over the past 7 days, and price history over the last 30 days.
    * @param marketId The ID of the market to retrieve.
+   *  @param {string} locale - The locale for currency conversion.
+   * @param {string | undefined} currency - The currency for conversion.
    * @returns A promise that resolves to the market details, including trend direction and recent prices.
    * @throws NotFoundException if the market with the specified ID does not exist.
    */
-  async findById(marketId: number) {
+  async findById(
+    marketId: number,
+    locale: string,
+    currency: string | undefined,
+  ) {
     const thirtyDaysAgo = getDateDaysAgo(30);
     const sevenDaysAgo = getDateDaysAgo(7);
 
@@ -56,13 +64,24 @@ export class MarketService {
         ? TrendDirection.Upward
         : TrendDirection.Downward;
 
+    const [marketCurrentPrice] = await this.currencyService.convertPrices(
+      [rawResult.market_current_price],
+      locale,
+      currency,
+    );
+
+    const pricesLast30Days = await this.currencyService.convertPriceHistory(
+      rawResult.prices_last_30_days || [],
+      locale,
+      currency,
+    );
     const result = {
       marketId: rawResult.market_id,
       marketName: rawResult.market_name,
       marketDescription: rawResult.market_description,
-      marketCurrentPrice: rawResult.market_current_price,
+      marketCurrentPrice,
       marketTrend: marketTrend,
-      pricesLast30Days: rawResult.prices_last_30_days || [],
+      pricesLast30Days,
     };
 
     return result;

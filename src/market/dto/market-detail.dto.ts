@@ -19,10 +19,10 @@ export class MarketDetailDto {
   marketDescription: string;
 
   @ApiProperty({
-    example: 23.51998487903226,
+    example: '$ 13.32',
     description: 'The current price of the market',
   })
-  marketCurrentPrice: number;
+  marketCurrentPrice: string;
 
   @ApiProperty({
     enum: TrendDirection,

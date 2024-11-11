@@ -27,11 +27,7 @@ export class MarketController {
     description: 'Returns a list of market summaries',
     type: [MarketSummaryDto],
   })
-  @ApiQuery({ name: 'currency', required: false })
-  findAll(
-    @Locale() locale: string,
-    @Query('currency', ValidateCurrencyCodePipe) currencyCode: string,
-  ) {
+  findAll() {
     return this.marketService.findAll();
   }
 
@@ -45,6 +41,12 @@ export class MarketController {
     description: 'The unique identifier of the market',
     type: Number,
   })
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    description:
+      '(OPTIONAL) :Currency code for price conversion (e.g., USD, EUR).',
+  })
   @ApiOkResponse({
     description: 'Returns detailed information about the market',
     type: MarketDetailDto,
@@ -52,7 +54,11 @@ export class MarketController {
   @ApiNotFoundResponse({
     description: 'Market not found',
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.marketService.findById(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('currency', ValidateCurrencyCodePipe) currency: string,
+    @Locale() locale: string,
+  ) {
+    return this.marketService.findById(id, locale, currency);
   }
 }
