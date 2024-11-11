@@ -2,7 +2,9 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+import { getCurrency as localeToCurrencyCode } from 'locale-currency';
 import { ExchangeRate } from 'src/entities/exchange-rate.entity';
+import { getCurrencySymbol } from 'src/utils/get-currency-symbol.util';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -15,6 +17,10 @@ export class CurrencyService implements OnModuleInit {
   async onModuleInit() {
     await this.fetchAndStoreExchangeRates();
   }
+  /**
+   * Fetches exchange rates from an external API and stores them in the database.
+   * This method is scheduled to run every day at midnight.
+   */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async fetchAndStoreExchangeRates() {
     const apiUrl = this.configService.getOrThrow<string>(
@@ -38,6 +44,93 @@ export class CurrencyService implements OnModuleInit {
       });
     } catch (error) {
       console.error('Error fetching exchange rates:', error?.message);
+    }
+  }
+
+  /**
+   * Converts a price from USD to the target currency based on the locale or a specified currency.
+   * @param price - The price in USD.
+   * @param locale - The locale to determine the target currency.
+   * @param preferableTargetCurrency - The preferred target currency.
+   * @returns The converted price with the currency symbol.
+   */
+  async convertPrice(
+    price: number,
+    locale: string,
+    preferableTargetCurrency: string | undefined,
+  ) {
+    const target = preferableTargetCurrency || localeToCurrencyCode(locale);
+
+    try {
+      if (target === 'USD') {
+        throw new Error();
+      }
+      const exchangeRateEntity = await this.exchangeRateRepository.findOne({
+        where: { targetCurrency: target },
+      });
+
+      if (!exchangeRateEntity) {
+        throw new Error();
+      }
+
+      const rate = exchangeRateEntity.rate;
+      const convertedPrice = price * rate;
+      return `${getCurrencySymbol(target)} ${convertedPrice.toFixed(2)}`;
+    } catch (e) {
+      console.error(
+        `Error converting price currency, error code: `,
+        e?.message,
+      );
+
+      return `$ ${price.toFixed(2)}`;
+    }
+  }
+
+  /**
+   * Converts a price history from USD to the target currency based on the locale or a specified currency.
+   * @param history - The price history with dates and prices in USD.
+   * @param locale - The locale to determine the target currency.
+   * @param preferableTargetCurrency - The preferred target currency.
+   * @returns The converted price history with the currency symbol.
+   */
+  async convertPriceHistory(
+    history: { date: string; price: number }[],
+    locale: string,
+    preferableTargetCurrency: string | undefined,
+  ) {
+    const target = preferableTargetCurrency || localeToCurrencyCode(locale);
+
+    try {
+      if (target === 'USD') {
+        throw new Error();
+      }
+      const exchangeRateEntity = await this.exchangeRateRepository.findOne({
+        where: { targetCurrency: target },
+      });
+
+      if (!exchangeRateEntity) {
+        throw new Error();
+      }
+
+      const rate = exchangeRateEntity.rate;
+      const symbol = getCurrencySymbol(target);
+      return history.map((item) => {
+        const convertedPrice = item.price * rate;
+        return {
+          ...item,
+          price: `${symbol} ${convertedPrice.toFixed(2)}`,
+        };
+      });
+    } catch (e) {
+      console.error(
+        `Error converting price currency, error code: `,
+        e?.message,
+      );
+
+      return history.map((item) => ({
+        ...item,
+        price: `$ ${item.price.toFixed(2)}`,
+      }));
     }
   }
 }
