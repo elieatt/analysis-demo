@@ -1,8 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CompanyPrice } from 'src/entities/company-price';
 import { Company } from 'src/entities/company.entity';
-import { MarketPrice } from 'src/entities/market-price';
+import { MarketPrice } from 'src/entities/market-price.entity';
 import { Market } from 'src/entities/market.entity';
 import { Repository } from 'typeorm';
 import {
@@ -12,6 +11,7 @@ import {
   fetchMarketsPrices,
 } from '../super-market-api';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CompanyPrice } from 'src/entities/company-price.entity';
 @Injectable()
 export class DataSyncService implements OnModuleInit {
   constructor(

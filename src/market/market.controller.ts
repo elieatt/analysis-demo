@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,10 +6,13 @@ import {
   ApiParam,
   ApiOkResponse,
   ApiNotFoundResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { MarketService } from './market.service';
 import { MarketSummaryDto } from './dto/market-summary.dto';
 import { MarketDetailDto } from './dto/market-detail.dto';
+import { Locale } from 'src/common/decorators/locale.decorator';
+import { ValidateCurrencyCodePipe } from 'src/common/pipes/validate-currency-code.pipe';
 
 @ApiTags('Markets')
 @Controller('markets')
@@ -24,7 +27,11 @@ export class MarketController {
     description: 'Returns a list of market summaries',
     type: [MarketSummaryDto],
   })
-  findAll() {
+  @ApiQuery({ name: 'currency', required: false })
+  findAll(
+    @Locale() locale: string,
+    @Query('currency', ValidateCurrencyCodePipe) currencyCode: string,
+  ) {
     return this.marketService.findAll();
   }
 

@@ -7,7 +7,7 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Market } from './market.entity';
-import { CompanyPrice } from './company-price';
+import { CompanyPrice } from './company-price.entity';
 
 @Entity()
 export class Company {
