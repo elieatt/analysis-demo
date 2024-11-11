@@ -79,12 +79,8 @@ export class CurrencyService implements OnModuleInit {
         const convertedPrice = price * rate;
         return `${symbol} ${convertedPrice.toFixed(2)}`;
       });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-      console.error(
-        `Error converting price currency, error code: `,
-        e?.message,
-      );
-
       return prices.map((price) => `$ ${price.toFixed(2)}`);
     }
   }
@@ -124,12 +120,8 @@ export class CurrencyService implements OnModuleInit {
           price: `${symbol} ${convertedPrice.toFixed(2)}`,
         };
       });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-      console.error(
-        `Error converting price currency, error code: `,
-        e?.message,
-      );
-
       return history.map((item) => ({
         ...item,
         price: `$ ${item.price.toFixed(2)}`,
