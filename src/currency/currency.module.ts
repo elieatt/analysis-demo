@@ -6,5 +6,6 @@ import { ExchangeRate } from 'src/entities/exchange-rate.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([ExchangeRate])],
   providers: [CurrencyService],
+  exports: [CurrencyService],
 })
 export class CurrencyModule {}

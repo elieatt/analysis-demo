@@ -48,14 +48,14 @@ export class CurrencyService implements OnModuleInit {
   }
 
   /**
-   * Converts a price from USD to the target currency based on the locale or a specified currency.
-   * @param price - The price in USD.
+   * Converts an array of prices from USD to the target currency based on the locale or a specified currency.
+   * @param prices - The array of prices in USD.
    * @param locale - The locale to determine the target currency.
    * @param preferableTargetCurrency - The preferred target currency.
-   * @returns The converted price with the currency symbol.
+   * @returns The array of converted prices with the currency symbol.
    */
-  async convertPrice(
-    price: number,
+  async convertPrices(
+    prices: number[],
     locale: string,
     preferableTargetCurrency: string | undefined,
   ) {
@@ -74,15 +74,18 @@ export class CurrencyService implements OnModuleInit {
       }
 
       const rate = exchangeRateEntity.rate;
-      const convertedPrice = price * rate;
-      return `${getCurrencySymbol(target)} ${convertedPrice.toFixed(2)}`;
+      const symbol = getCurrencySymbol(target);
+      return prices.map((price) => {
+        const convertedPrice = price * rate;
+        return `${symbol} ${convertedPrice.toFixed(2)}`;
+      });
     } catch (e) {
       console.error(
         `Error converting price currency, error code: `,
         e?.message,
       );
 
-      return `$ ${price.toFixed(2)}`;
+      return prices.map((price) => `$ ${price.toFixed(2)}`);
     }
   }
 
