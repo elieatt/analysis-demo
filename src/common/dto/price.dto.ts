@@ -8,8 +8,8 @@ export class PriceDto {
   date: string;
 
   @ApiProperty({
-    example: 23.51998487903226,
+    example: '$ 23.22',
     description: 'The  price on this date',
   })
-  price: number;
+  price: string;
 }

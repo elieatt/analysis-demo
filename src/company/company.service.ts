@@ -6,23 +6,27 @@ import { TrendDirection } from 'src/common/enums/trend-direction.enum';
 import { CompanyFilterDto } from './dto/company-filter.dto';
 import { mapTrendSlopeToDirection } from 'src/utils/map-slpoe-to-direction.util';
 import { getDateDaysAgo } from 'src/utils/get-days-ago.util';
+import { CurrencyService } from 'src/currency/currency.service';
 
 @Injectable()
 export class CompanyService {
   constructor(
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
+    private readonly currencyService: CurrencyService,
   ) {}
+
   /**
-   * Fetches all companies with the given filter options.
-   * This method retrieves companies along with their latest price,
+   * Fetches all companies based on the provided filter, locale, and currency.
+   *  This method retrieves companies along with their latest price,
    * price trends over the past 30 and 7 days, and additional company information.
-   *
-   * @param filter - The filter criteria for retrieving the companies.
+   * @param {CompanyFilterDto} filter - The filter criteria for fetching companies.
+   * @param {string} locale - The locale for currency conversion.
+   * @param {string | undefined} currency - The currency for conversion.
    * @returns A list of companies with relevant information such as trends and price history.
    */
-  async fetchAllCompanies(filter: CompanyFilterDto) {
-    const { marketId, companyTrend, marketTrend } = filter;
+  async fetchAllCompanies(filter: CompanyFilterDto, locale: string) {
+    const { marketId, companyTrend, marketTrend, currency } = filter;
     const thirtyDaysAgo = getDateDaysAgo(30);
     const sevenDaysAgo = getDateDaysAgo(7);
 
@@ -71,46 +75,60 @@ export class CompanyService {
     });
 
     const rawQueryResult = await queryBuilder.getRawMany();
-    const result = rawQueryResult
-      .filter((row) => {
-        const companyTrendMatch =
-          companyTrend === undefined ||
-          (companyTrend === TrendDirection.Upward &&
-            row.company_trend_slope >= 0) ||
-          (companyTrend === TrendDirection.Downward &&
-            row.company_trend_slope < 0);
+    const result = await Promise.all(
+      rawQueryResult
+        .filter((row) => {
+          const companyTrendMatch =
+            companyTrend === undefined ||
+            (companyTrend === TrendDirection.Upward &&
+              row.company_trend_slope >= 0) ||
+            (companyTrend === TrendDirection.Downward &&
+              row.company_trend_slope < 0);
 
-        const marketTrendMatch =
-          marketTrend === undefined ||
-          (marketTrend === TrendDirection.Upward &&
-            row.market_trend_slope >= 0) ||
-          (marketTrend === TrendDirection.Downward &&
-            row.market_trend_slope < 0);
+          const marketTrendMatch =
+            marketTrend === undefined ||
+            (marketTrend === TrendDirection.Upward &&
+              row.market_trend_slope >= 0) ||
+            (marketTrend === TrendDirection.Downward &&
+              row.market_trend_slope < 0);
 
-        return companyTrendMatch && marketTrendMatch;
-      })
-      .map((row) => ({
-        companyName: row.company_name,
-        companyId: row.company_id,
-        marketName: row.market_name,
-        marketId: row.market_id,
-        companyValueNow: row.company_value_now,
-        companyTrend: mapTrendSlopeToDirection(row.company_trend_slope),
-        marketTrend: mapTrendSlopeToDirection(row.market_trend_slope),
-        bestCompanyPrice: row.best_price_30_days,
-        worstCompanyPrice: row.worst_price_30_days,
-      }));
+          return companyTrendMatch && marketTrendMatch;
+        })
+        .map(async (row) => {
+          const [companyValueNow, bestCompanyPrice, worstCompanyPrice] =
+            await this.currencyService.convertPrices(
+              [
+                row.company_value_now,
+                row.best_price_30_days,
+                row.worst_price_30_days,
+              ],
+              locale,
+              currency,
+            );
+
+          return {
+            companyName: row.company_name,
+            companyId: row.company_id,
+            marketName: row.market_name,
+            marketId: row.market_id,
+            companyValueNow,
+            companyTrend: mapTrendSlopeToDirection(row.company_trend_slope),
+            marketTrend: mapTrendSlopeToDirection(row.market_trend_slope),
+            bestCompanyPrice,
+            worstCompanyPrice,
+          };
+        }),
+    );
 
     return result;
   }
-
   /**
    * Fetches a summary of companies in a given market.
    * This method returns basic company details such as name and market information.
-   *
    * @param marketId - The ID of the market to filter companies by.
    * @returns A list of companies along with their respective market details.
    */
+
   fetchCompaniesSummary(marketId: number) {
     return this.companyRepo.find({
       relations: { market: true },
@@ -118,17 +136,18 @@ export class CompanyService {
       where: !Number.isNaN(marketId) ? { market: { id: marketId } } : {},
     });
   }
-
   /**
    * Fetches detailed information about a specific company by its ID.
    * This method retrieves the company's latest price, trend, and price history
    * over the past 30 days.
    *
-   * @param companyId - The ID of the company to retrieve information for.
+   * @param {number} companyId - The ID of the company.
+   * @param {string} locale - The locale for currency conversion.
+   * @param {string} currency - The currency for conversion.
    * @returns Detailed company information including price trends, market data, and history.
    * @throws NotFoundException if the company with the specified ID is not found.
    */
-  async fetchCompanyById(companyId: number) {
+  async fetchCompanyById(companyId: number, locale: string, currency: string) {
     const thirtyDaysAgo = getDateDaysAgo(30);
     const sevenDaysAgo = getDateDaysAgo(7);
 
@@ -167,15 +186,26 @@ export class CompanyService {
       throw new NotFoundException('Company not found');
     }
 
+    const [companyCurrentPrice] = await this.currencyService.convertPrices(
+      [rawResult.company_current_price],
+      locale,
+      currency,
+    );
+
+    const pricesLast30Days = await this.currencyService.convertPriceHistory(
+      rawResult.prices_last_30_days || [],
+      locale,
+      currency,
+    );
     const result = {
       companyId: rawResult.company_id,
       companyName: rawResult.company_name,
       marketId: rawResult.market_id,
       marketName: rawResult.market_name,
       companyDescription: rawResult.company_description,
-      companyCurrentPrice: rawResult.company_current_price,
+      companyCurrentPrice,
       companyTrend: mapTrendSlopeToDirection(rawResult.company_trend_slope),
-      pricesLast30Days: rawResult.prices_last_30_days || [],
+      pricesLast30Days,
     };
 
     return result;

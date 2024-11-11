@@ -40,10 +40,10 @@ export class CompanyDetailsDto {
 
   @ApiProperty({
     description: 'The current price of the company stock.',
-    type: Number,
-    example: 8.290516318044356,
+    type: String,
+    example: '$ 12.23',
   })
-  companyCurrentPrice: number;
+  companyCurrentPrice: string;
 
   @ApiProperty({
     description: 'The trend of the company stock (e.g., growth, decline).',

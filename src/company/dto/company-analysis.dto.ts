@@ -31,10 +31,10 @@ export class CompanyAnalysisDto {
 
   @ApiProperty({
     description: 'The current value of the company.',
-    type: Number,
-    example: 13.401493195564514,
+    type: String,
+    example: '$ 32.32',
   })
-  companyValueNow: number;
+  companyValueNow: string;
 
   @ApiProperty({
     description: 'The trend of the company stock (e.g., growth, decline).',
@@ -52,15 +52,15 @@ export class CompanyAnalysisDto {
 
   @ApiProperty({
     description: 'The highest price of the company stock.',
-    type: Number,
-    example: 13.401493195564514,
+    type: String,
+    example: '$ 2.42',
   })
-  bestCompanyPrice: number;
+  bestCompanyPrice: string;
 
   @ApiProperty({
     description: 'The lowest price of the company stock.',
-    type: Number,
-    example: 4.093088457661291,
+    type: String,
+    example: '$ 54.23',
   })
-  worstCompanyPrice: number;
+  worstCompanyPrice: string;
 }

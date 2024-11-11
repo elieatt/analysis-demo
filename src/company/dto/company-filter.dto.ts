@@ -1,6 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsISO4217CurrencyCode,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { TrendDirection } from 'src/common/enums/trend-direction.enum';
 export class CompanyFilterDto {
   @ApiPropertyOptional()
@@ -19,4 +25,9 @@ export class CompanyFilterDto {
   @IsOptional()
   @IsEnum(TrendDirection)
   marketTrend: TrendDirection;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO4217CurrencyCode()
+  currency: string;
 }

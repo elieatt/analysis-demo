@@ -12,6 +12,8 @@ import { CompanyFilterDto } from './dto/company-filter.dto';
 import { CompanyDetailsDto } from './dto/company-details.dto';
 import { CompanyAnalysisDto } from './dto/company-analysis.dto';
 import { CompanySummaryDto } from './dto/company-summary.dto';
+import { ValidateCurrencyCodePipe } from 'src/common/pipes/validate-currency-code.pipe';
+import { Locale } from 'src/common/decorators/locale.decorator';
 
 @ApiTags('Companies')
 @Controller('companies')
@@ -26,8 +28,17 @@ export class CompanyController {
   @ApiOkResponse({
     type: [CompanyAnalysisDto],
   })
-  getAllCompanies(@Query() filterDto: CompanyFilterDto) {
-    return this.companyService.fetchAllCompanies(filterDto);
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    description:
+      '(OPTIONAL) :Currency code for price conversion (e.g., USD, EUR).',
+  })
+  getAllCompanies(
+    @Query() filterDto: CompanyFilterDto,
+    @Locale() locale: string,
+  ) {
+    return this.companyService.fetchAllCompanies(filterDto, locale);
   }
   /***********************************************************************************************************/
   @Get('/summary')
@@ -62,13 +73,23 @@ export class CompanyController {
     type: Number,
     description: 'The unique identifier of the company.',
   })
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    description:
+      '(OPTIONAL) :Currency code for price conversion (e.g., USD, EUR).',
+  })
   @ApiOkResponse({
     type: CompanyDetailsDto,
   })
   @ApiNoContentResponse({
     description: 'Company not found.',
   })
-  async getCompanyById(@Param('id', ParseIntPipe) id: number) {
-    return this.companyService.fetchCompanyById(id);
+  async getCompanyById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('currency', ValidateCurrencyCodePipe) currency: string,
+    @Locale() locale: string,
+  ) {
+    return this.companyService.fetchCompanyById(id, locale, currency);
   }
 }
